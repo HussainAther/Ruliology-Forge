@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ruliology-forge"
+version = "0.1.0"
+description = "A Python toolkit for computational resilience experiments in cellular automata."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Syed Hussain Ather"}
+]
+keywords = ["cellular automata", "ruliology", "complex systems", "artificial life", "resilience"]
+dependencies = [
+  "numpy>=1.23",
+  "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+  "ruff>=0.5",
+]
+
+[project.scripts]
+ruliology = "ruliology_forge.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

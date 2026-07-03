@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: Ruliology Forge
+message: If you use this software, please cite it using the metadata from this file.
+type: software
+authors:
+  - family-names: Ather
+    given-names: Syed Hussain
+repository-code: https://github.com/HussainAther/ruliology-forge
+license: MIT
+version: 0.1.0
+abstract: Open-source Python toolkit for studying computational resilience, perturbation, and restoration in elementary cellular automata and rule-based systems.
+keywords:
+  - cellular automata
+  - ruliology
+  - complex systems
+  - artificial life
+  - computational resilience
+  - perturbation

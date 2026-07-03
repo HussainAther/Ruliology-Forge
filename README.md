@@ -1,74 +1,184 @@
-# Ruliology-Forge: A Toolkit for Forensic Morphogenesis
+# Ruliology Forge
 
-**Ruliology-Forge** is an open-source framework designed to measure, simulate, and visualize the resilience of computational patterns. Based on the manuscript *"Ruliological Resilience: Pattern Restoration and Robustness in Wolfram Patterns"* (Ather & Gordon, 2026), this toolkit provides the mathematical and computational bridge between Wolfram’s Elementary Cellular Automata (ECA) and biological regeneration.
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)]()
+[![License](https://img.shields.io/badge/License-MIT-green.svg)]()
+[![Status](https://img.shields.io/badge/Status-Experimental-orange.svg)]()
 
-## 🌟 Key Features
+**Ruliology Forge** is an open-source Python toolkit for studying computational resilience in rule-based systems.
 
-* **Restoration Coefficient ($R$) Engine:** Quantify the "healing" capacity of any ECA rule using Boolean XOR difference mapping.
-* **Perturbation Architect:** Systematically introduce "injuries" (localized entropy) at specific temporal horizons ($T$) to test pattern robustness.
-* **The Forensic Library:** A digital catalog of 200 *Conus* specimens mapped to their ruliological analogs (Rules 110, 54, 232, and 30).
-* **Blender Integration (Beta):** Procedural Geometry Node setups to "grow" 3D shells using ruliological logic.
+The first release focuses on Elementary Cellular Automata (ECA): simulating rules, applying localized perturbations, comparing control and perturbed trajectories, and measuring recovery with a Restoration Coefficient.
 
-## 🧪 Scientific Foundation
+This repository is intentionally scoped as a clean, reproducible starter toolkit. Broader biological, morphogenetic, and shell-pattern work can be added later as optional research modules once datasets and claims are curated.
 
-Traditional ruliology focuses on growth. **Ruliology-Forge** focuses on *recovery*.
+## Why this exists
 
-By mapping the "Differentiation Code" (Gordon & Gordon, 2019) to computational resilience, this software allows researchers to visualize the **Ruliological Scar**—the moment where a system (like Rule 110) prioritizes structural logic over spatial coordinates.
+Many cellular automata studies focus on growth: what pattern does a rule produce from an initial condition?
 
-## 🚀 Quick Start
+Ruliology Forge asks a complementary question:
 
-### Installation
+> What happens when a rule-generated pattern is disrupted?
+
+Some rules rapidly return to their baseline behavior. Others diverge permanently. Some preserve global structure while carrying localized scars. This toolkit provides the machinery to explore those regimes.
+
+## Current features
+
+- Elementary Cellular Automata simulation for rules 0 through 255
+- Single-cell and random initial conditions
+- Periodic or fixed boundary conditions
+- Perturbation operators:
+  - bit flip
+  - void / zeroing
+  - random mix
+- Control vs perturbed trajectory comparison
+- XOR difference maps
+- Normalized Hamming divergence
+- Restoration Coefficient `R`
+- Rule-space scans
+- Basic plotting helpers
+- Tests and example scripts
+
+## Installation
 
 ```bash
-git clone https://github.com/HussainAther/Ruliology.git
-cd Ruliology
-pip install -r requirements.txt
-
+git clone https://github.com/HussainAther/ruliology-forge.git
+cd ruliology-forge
+pip install -e .
 ```
 
-### Measuring Resilience ($R$)
+For development:
 
-Calculate the restoration score for Rule 110 with a 5-cell injury at step 50:
+```bash
+pip install -e '.[dev]'
+pytest
+```
+
+## Quick start
 
 ```python
-from ruliology_forge import ECAEngine
+from ruliology_forge import run_perturbation_experiment, plot_trajectory
 
-rule = 110
-engine = ECAEngine(rule)
-r_score = engine.calculate_resilience(injury_size=5, horizon=50)
+result = run_perturbation_experiment(
+    rule=110,
+    width=201,
+    steps=200,
+    perturb_time=80,
+    perturb_radius=5,
+    perturbation="bit_flip",
+)
 
-print(f"Restoration Coefficient for Rule {rule}: {r_score}")
-
+print(result.restoration_coefficient)
+plot_trajectory(result.control, title="Rule 110 control")
+plot_trajectory(result.difference, title="Rule 110 XOR difference")
 ```
 
-## 📂 Project Structure
+## Command-line usage
 
-* `/core`: The Python engine for ECA simulation and XOR difference mapping.
-* `/forensics`: High-resolution data and indices for the *Conus* shell library.
-* `/blender`: `.blend` templates and scripts for ruliological displacement mapping.
-* `/notebooks`: Jupyter tutorials on calculating the **Perturbation Horizon**.
+Scan all 256 ECA rules:
 
-## 🤝 Contributing
+```bash
+ruliology scan --output results/eca_scan.csv
+```
 
-We welcome contributions from computational physicists, theoretical biologists, and 3D artists.
+Run a single perturbation experiment and save figures:
 
-1. Fork the Project.
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`).
-4. Push to the Branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
+```bash
+ruliology experiment --rule 110 --output-dir results/rule110
+```
 
-## 📄 Citation
+## Repository structure
 
-If you use this software in your research, please cite:
+```text
+ruliology-forge/
+  README.md
+  LICENSE
+  CITATION.cff
+  pyproject.toml
+  src/ruliology_forge/
+    __init__.py
+    eca.py
+    perturb.py
+    metrics.py
+    experiments.py
+    plotting.py
+    cli.py
+  examples/
+    quickstart_rule110.py
+    scan_all_rules.py
+  tests/
+    test_eca.py
+    test_metrics.py
+    test_experiments.py
+  docs/
+    project_plan.md
+    first_issues.md
+  results/
+    .gitkeep
+```
 
-> Ather, S. H., & Gordon, R. (2026). *Ruliological Resilience: Pattern Restoration and Robustness in Wolfram Patterns*. Biosystems (In Review).
+## Core metric
 
-## 📜 License
+The normalized divergence at time `t` is:
 
-Distributed under the MIT License. See `LICENSE` for more information.
+```text
+D(t) = HammingDistance(control[t], perturbed[t]) / lattice_width
+```
 
----
+The Restoration Coefficient is:
 
-**Maintained by [Hussain Ather**](https://github.com/HussainAther) *Part of the Janus Sphere Innovations Research Initiative*
+```text
+R = 1 - mean(D(t))
+```
 
+where the mean is taken over the post-perturbation recovery window.
+
+Interpretation:
+
+- `R = 1.0`: exact restoration / no divergence
+- `R near 0.0`: persistent divergence
+- intermediate `R`: partial recovery, scarring, or structured deviation
+
+## Roadmap
+
+### v0.1 — ECA resilience toolkit
+
+- Stable ECA engine
+- Perturbation experiments
+- Restoration metrics
+- Rule scanning
+- Figures and CSV export
+- Tests and documentation
+
+### v0.2 — richer automata
+
+- Totalistic automata
+- 2D Life-like automata
+- Additional perturbation geometries
+- Shift-tolerant restoration metrics
+
+### v0.3 — research workflows
+
+- Batch experiment configs
+- Parallel scans
+- Reproducible figure pipelines
+- Dataset export
+- Notebook tutorials
+
+### Future research directions
+
+- Morphogenesis-inspired repair models
+- Artificial life experiments
+- Shell-pattern simulations
+- Repair-aware computational architectures
+- Rule-space maps of robustness and fragility
+
+## Good first issues
+
+See [`docs/first_issues.md`](docs/first_issues.md).
+
+## Citation
+
+If you use this project in research, please cite the repository using [`CITATION.cff`](CITATION.cff).
+
+## License
+
+MIT License. See [`LICENSE`](LICENSE).
