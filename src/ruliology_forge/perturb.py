@@ -16,27 +16,21 @@ def perturb_state(
     radius: int = 3,
     kind: PerturbationKind = "bit_flip",
     seed: int | None = None,
+    noise_probability: float = 0.5,
 ) -> np.ndarray:
-    """Apply a localized perturbation to a binary state.
-
-    Parameters
-    ----------
-    state:
-        One-dimensional binary state.
-    center:
-        Center index of the perturbation. Defaults to the middle of the state.
-    radius:
-        Number of cells on each side of the center to perturb. The affected
-        interval has width ``2 * radius + 1`` before clipping at boundaries.
-    kind:
-        ``bit_flip``, ``void``, or ``random_mix``.
-    """
+    """Apply a localized perturbation to a binary state."""
 
     arr = np.asarray(state, dtype=np.uint8).copy()
     if arr.ndim != 1:
         raise ValueError("state must be one-dimensional.")
+    if arr.size == 0:
+        raise ValueError("state must not be empty.")
+    if not np.isin(arr, [0, 1]).all():
+        raise ValueError("state must contain only 0 and 1 values.")
     if radius < 0:
         raise ValueError("radius must be non-negative.")
+    if not 0 <= noise_probability <= 1:
+        raise ValueError("noise_probability must be between 0 and 1.")
 
     if center is None:
         center = arr.size // 2
@@ -52,7 +46,10 @@ def perturb_state(
         arr[start:end] = 0
     elif kind == "random_mix":
         rng = np.random.default_rng(seed)
-        arr[start:end] = rng.integers(0, 2, size=end - start, dtype=np.uint8)
+        mask = rng.random(end - start) < noise_probability
+        region = arr[start:end]
+        region[mask] = 1 - region[mask]
+        arr[start:end] = region
     else:
         raise ValueError("kind must be 'bit_flip', 'void', or 'random_mix'.")
 

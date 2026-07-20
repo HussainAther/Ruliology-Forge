@@ -44,3 +44,38 @@ def test_recovery_metrics():
     assert summary.recovered is True
     assert summary.recovery_time == 2
     assert summary.peak_divergence == 1.0
+
+
+def test_scar_metrics_and_shift_tolerance():
+    from ruliology_forge import scar_metrics, shift_tolerant_divergence
+
+    control = np.zeros((4, 7), dtype=np.uint8)
+    control[:, 3] = 1
+    shifted = np.zeros_like(control)
+    shifted[:, 4] = 1
+
+    exact = hamming_divergence(control, shifted)
+    tolerant, shifts = shift_tolerant_divergence(control, shifted, max_shift=2)
+    assert np.all(exact > 0)
+    assert np.allclose(tolerant, 0)
+    assert shifts[-1] == -1
+
+    scars = scar_metrics(control, shifted, start=0)
+    assert scars["final_scar_size"] == 2
+    assert scars["scar_duration"] == 4
+    assert scars["scar_spread"] == 2
+
+
+def test_random_mix_noise_probability_zero_is_noop():
+    from ruliology_forge import perturb_state
+
+    state = np.array([0, 1, 0, 1, 0], dtype=np.uint8)
+    result = perturb_state(
+        state,
+        center=2,
+        radius=2,
+        kind="random_mix",
+        seed=1,
+        noise_probability=0.0,
+    )
+    assert np.array_equal(result, state)

@@ -37,6 +37,20 @@ Some rules rapidly return to their baseline behavior. Others diverge permanently
 - Basic plotting helpers
 - Tests and example scripts
 
+
+## Version 0.2 highlights
+
+- Explicit `after_update` and `before_update` perturbation timing.
+- Independent random streams for initial conditions and perturbations.
+- Initial-density and stochastic noise-strength controls.
+- Scar size, duration, spread, and centroid-drift metrics.
+- Shift-tolerant restoration for translated patterns.
+- Optional compressed trajectory export with `--save-arrays`.
+- Plot-free batch operation with `--no-plots`.
+- Complete experiment configuration and software metadata in `summary.json`.
+
+See [`docs/methods.md`](docs/methods.md) for definitions and interpretation cautions.
+
 ## Installation
 
 ```bash
@@ -182,23 +196,3 @@ If you use this project in research, please cite the repository using [`CITATION
 ## License
 
 MIT License. See [`LICENSE`](LICENSE).
-
-## Expanded resilience metrics
-
-Each perturbation experiment now reports a complementary metric bundle rather
-than relying on one score alone:
-
-- restoration coefficient and final restoration;
-- peak and mean post-perturbation divergence;
-- normalized divergence area under the curve;
-- threshold-based recovery time with a persistence requirement.
-
-The CLI writes these values to `summary.json` for a single experiment and to
-CSV columns for scans. Repeated stochastic scans are reproducible with `--seed`.
-
-```bash
-ruliology experiment --rule 110 --seed 42 --output-dir results/rule110
-ruliology scan --start-rule 0 --end-rule 255 --repeats 10 \
-  --initial-condition random --perturbation random_mix --seed 42 \
-  --output results/eca_ensemble.csv
-```
