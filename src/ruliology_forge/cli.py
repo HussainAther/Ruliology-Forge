@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .analysis import parameter_grid, summarize_scan
+from .benchmarks import benchmark_markdown, benchmark_rules, standard_suite
 from .experiments import (
     ExperimentConfig,
     evolve_resilient_rules,
@@ -94,6 +95,15 @@ def main() -> None:
     sweep.add_argument("--output", type=Path, default=Path("results/sweep_raw.csv"))
     sweep.add_argument("--summary-output", type=Path, default=Path("results/sweep_summary.csv"))
     _add_common_arguments(sweep)
+
+
+    benchmark = subparsers.add_parser("benchmark", help="Benchmark and rank ECA rules across a standard resilience suite.")
+    benchmark.add_argument("--rules", type=int, nargs="+", default=list(range(256)))
+    benchmark.add_argument("--repeats", type=int, default=5)
+    benchmark.add_argument("--jobs", type=int, default=1)
+    benchmark.add_argument("--output-dir", type=Path, default=Path("results/benchmark"))
+    benchmark.add_argument("--top", type=int, default=20)
+    _add_common_arguments(benchmark)
 
     evolve = subparsers.add_parser("evolve", help="Search for resilient ECA rules.")
     evolve.add_argument("--population-size", type=int, default=32)
@@ -197,6 +207,46 @@ def main() -> None:
         _write_csv(args.summary_output, summary_rows)
         print(f"Wrote {len(rows)} raw rows to {args.output}")
         print(f"Wrote {len(summary_rows)} summary rows to {args.summary_output}")
+
+
+    elif args.command == "benchmark":
+        if args.top <= 0:
+            parser.error("--top must be positive")
+        suite = standard_suite(steps=args.steps)
+        raw_rows, ranking_rows = benchmark_rules(
+            args.rules,
+            suite=suite,
+            repeats=args.repeats,
+            jobs=args.jobs,
+            width=args.width,
+            steps=args.steps,
+            seed=args.seed,
+            recovery_threshold=args.recovery_threshold,
+            recovery_persistence=args.recovery_persistence,
+            max_shift=args.max_shift,
+        )
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        _write_csv(args.output_dir / "benchmark_raw.csv", raw_rows)
+        _write_csv(args.output_dir / "benchmark_ranking.csv", ranking_rows)
+        (args.output_dir / "benchmark_report.md").write_text(
+            benchmark_markdown(ranking_rows, suite=suite, top_n=args.top),
+            encoding="utf-8",
+        )
+        manifest = {
+            "suite": suite.name,
+            "suite_fingerprint": suite.fingerprint(),
+            "rules": args.rules,
+            "repeats": args.repeats,
+            "width": args.width,
+            "steps": args.steps,
+            "seed": args.seed,
+            "scenario_count": len(suite.scenarios),
+            "observation_count": len(raw_rows),
+        }
+        (args.output_dir / "benchmark_manifest.json").write_text(
+            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+        )
+        print(f"Wrote benchmark outputs to {args.output_dir}")
 
     elif args.command == "evolve":
         kwargs = _experiment_kwargs(args)

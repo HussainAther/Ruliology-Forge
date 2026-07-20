@@ -260,3 +260,25 @@ from ruliology_forge.experiments import (
 The new API makes it practical to build reproducible experiment matrices,
 aggregate repeated trials, and prototype rule-discovery studies without tying
 the research workflow to the command line.
+
+## v0.4 benchmark workflow
+
+Ruliology Forge can now compare rules across a named, reproducible suite rather than ranking them from a single perturbation condition.
+
+```powershell
+ruliology benchmark `
+  --rules 0 18 22 30 54 90 110 150 `
+  --repeats 20 `
+  --jobs 4 `
+  --seed 42 `
+  --output-dir results\standard_benchmark
+```
+
+The command writes:
+
+- `benchmark_raw.csv` — every rule/scenario/repeat observation
+- `benchmark_ranking.csv` — robust cross-scenario ranking
+- `benchmark_report.md` — readable top-rule report and score definition
+- `benchmark_manifest.json` — suite fingerprint and run metadata
+
+The standard score combines mean restoration, worst-case restoration, recovery probability, shift-tolerant restoration, and consistency across scenarios. It is an exploratory ranking, not a claim that one rule is universally biologically regenerative.

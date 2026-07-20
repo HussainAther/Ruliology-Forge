@@ -14,3 +14,12 @@
 - Added reproducible perturbation timing and independent random streams.
 - Added scar and shift-tolerant resilience metrics.
 - Added richer metadata and trajectory exports.
+
+## 0.4.0 - Benchmarking and robust rankings
+
+- Added named, fingerprinted benchmark suites.
+- Added a balanced standard ECA resilience benchmark.
+- Added cross-scenario robust rule ranking with a transparent score.
+- Added benchmark manifests, raw observations, rankings, and Markdown reports.
+- Added the `ruliology benchmark` CLI command.
+- Added benchmark API tests and deterministic suite fingerprinting.
