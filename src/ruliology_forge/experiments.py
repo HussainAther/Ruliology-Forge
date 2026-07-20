@@ -239,3 +239,85 @@ def _validate_config(config: ExperimentConfig) -> None:
         raise ValueError("recovery_persistence must be positive.")
     if config.max_shift < 0:
         raise ValueError("max_shift must be non-negative.")
+
+
+def run_parameter_sweep(
+    configurations: Iterable[ExperimentConfig],
+    *,
+    repeats: int = 1,
+    jobs: int = 1,
+) -> list[dict[str, object]]:
+    """Run an arbitrary collection of experiment configurations."""
+    from concurrent.futures import ProcessPoolExecutor
+
+    if repeats <= 0:
+        raise ValueError("repeats must be positive.")
+    if jobs <= 0:
+        raise ValueError("jobs must be positive.")
+    tasks: list[tuple[ExperimentConfig, int]] = []
+    for config in configurations:
+        root = np.random.SeedSequence(config.seed)
+        children = root.spawn(repeats)
+        for repeat, child in enumerate(children):
+            seed = int(child.generate_state(1)[0])
+            tasks.append((ExperimentConfig(**{**config.to_dict(), "seed": seed}), repeat))
+    if jobs == 1:
+        results = [_run_config_task(task) for task in tasks]
+    else:
+        with ProcessPoolExecutor(max_workers=jobs) as pool:
+            results = list(pool.map(_run_config_task, tasks))
+    return results
+
+
+def _run_config_task(task: tuple[ExperimentConfig, int]) -> dict[str, object]:
+    config, repeat = task
+    result = run_perturbation_experiment(**config.to_dict())
+    return {
+        "repeat": repeat,
+        **config.to_dict(),
+        **result.summary.to_dict(),
+        "initial_seed": result.initial_seed,
+        "perturbation_seed": result.perturbation_seed,
+    }
+
+
+def evolve_resilient_rules(
+    *,
+    population_size: int = 32,
+    generations: int = 20,
+    elite_fraction: float = 0.25,
+    mutation_rate: float = 0.08,
+    seed: int | None = None,
+    experiment_kwargs: dict[str, object] | None = None,
+) -> list[dict[str, object]]:
+    """Simple genetic search over the 8-bit ECA rule space."""
+    if population_size < 2 or generations <= 0:
+        raise ValueError("population_size must be >= 2 and generations positive.")
+    if not 0 < elite_fraction <= 1 or not 0 <= mutation_rate <= 1:
+        raise ValueError("invalid evolutionary parameters.")
+    rng = np.random.default_rng(seed)
+    population = rng.integers(0, 256, size=population_size).tolist()
+    history: list[dict[str, object]] = []
+    kwargs = dict(experiment_kwargs or {})
+    for generation in range(generations):
+        scored = []
+        for rule in population:
+            child_seed = int(rng.integers(0, 2**32 - 1))
+            result = run_perturbation_experiment(int(rule), seed=child_seed, **kwargs)
+            scored.append((result.restoration_coefficient, int(rule), result.summary))
+        scored.sort(reverse=True, key=lambda x: x[0])
+        best = scored[0]
+        history.append({"generation": generation, "best_rule": best[1], "best_fitness": best[0], **best[2].to_dict()})
+        elite_count = max(2, int(round(population_size * elite_fraction)))
+        elites = [rule for _, rule, _ in scored[:elite_count]]
+        next_population = elites.copy()
+        while len(next_population) < population_size:
+            a, b = rng.choice(elites, size=2, replace=True)
+            mask = int(rng.integers(0, 256))
+            child = (int(a) & mask) | (int(b) & (~mask & 255))
+            for bit in range(8):
+                if rng.random() < mutation_rate:
+                    child ^= 1 << bit
+            next_population.append(child)
+        population = next_population[:population_size]
+    return history

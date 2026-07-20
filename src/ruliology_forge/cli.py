@@ -12,7 +12,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .experiments import run_perturbation_experiment, scan_rules
+from .analysis import parameter_grid, summarize_scan
+from .experiments import (
+    ExperimentConfig,
+    evolve_resilient_rules,
+    run_parameter_sweep,
+    run_perturbation_experiment,
+    scan_rules,
+)
 from .plotting import plot_divergence, plot_trajectory
 
 
@@ -72,6 +79,30 @@ def main() -> None:
     scan.add_argument("--output", type=Path, default=Path("results/eca_scan.csv"))
     _add_common_arguments(scan)
 
+    summarize = subparsers.add_parser("summarize", help="Aggregate a raw scan CSV.")
+    summarize.add_argument("input", type=Path)
+    summarize.add_argument("--output", type=Path, default=None)
+    summarize.add_argument("--confidence", type=float, default=0.95)
+
+    sweep = subparsers.add_parser("sweep", help="Run a parameter sweep.")
+    sweep.add_argument("--rules", type=int, nargs="+", required=True)
+    sweep.add_argument("--perturb-times", type=int, nargs="+", default=[80])
+    sweep.add_argument("--perturb-radii", type=int, nargs="+", default=[5])
+    sweep.add_argument("--initial-densities", type=float, nargs="+", default=[0.5])
+    sweep.add_argument("--repeats", type=int, default=1)
+    sweep.add_argument("--jobs", type=int, default=1)
+    sweep.add_argument("--output", type=Path, default=Path("results/sweep_raw.csv"))
+    sweep.add_argument("--summary-output", type=Path, default=Path("results/sweep_summary.csv"))
+    _add_common_arguments(sweep)
+
+    evolve = subparsers.add_parser("evolve", help="Search for resilient ECA rules.")
+    evolve.add_argument("--population-size", type=int, default=32)
+    evolve.add_argument("--generations", type=int, default=20)
+    evolve.add_argument("--elite-fraction", type=float, default=0.25)
+    evolve.add_argument("--mutation-rate", type=float, default=0.08)
+    evolve.add_argument("--output", type=Path, default=Path("results/evolution.csv"))
+    _add_common_arguments(evolve)
+
     args = parser.parse_args()
 
     if args.command == "experiment":
@@ -130,6 +161,66 @@ def main() -> None:
             writer.writeheader()
             writer.writerows(rows)
         print(f"Wrote {len(rows)} rows to {args.output}")
+
+    elif args.command == "summarize":
+        with args.input.open(newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        for row in rows:
+            row["recovered"] = str(row.get("recovered", "")).lower() == "true"
+        summary_rows = summarize_scan(rows, confidence=args.confidence)
+        output = args.output or args.input.with_name(args.input.stem + "_summary.csv")
+        output.parent.mkdir(parents=True, exist_ok=True)
+        _write_csv(output, summary_rows)
+        print(f"Wrote {len(summary_rows)} aggregate rows to {output}")
+
+    elif args.command == "sweep":
+        base = _experiment_kwargs(args)
+        base.pop("seed", None)
+        for key in ("perturb_time", "perturb_radius", "initial_density"):
+            base.pop(key, None)
+        configs = []
+        for values in parameter_grid(
+            rule=args.rules,
+            perturb_time=args.perturb_times,
+            perturb_radius=args.perturb_radii,
+            initial_density=args.initial_densities,
+        ):
+            configs.append(ExperimentConfig(**base, seed=args.seed, **values))
+        rows = run_parameter_sweep(configs, repeats=args.repeats, jobs=args.jobs)
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        _write_csv(args.output, rows)
+        summary_rows = summarize_scan(
+            rows,
+            group_by=("rule", "perturb_time", "perturb_radius", "initial_density"),
+        )
+        args.summary_output.parent.mkdir(parents=True, exist_ok=True)
+        _write_csv(args.summary_output, summary_rows)
+        print(f"Wrote {len(rows)} raw rows to {args.output}")
+        print(f"Wrote {len(summary_rows)} summary rows to {args.summary_output}")
+
+    elif args.command == "evolve":
+        kwargs = _experiment_kwargs(args)
+        seed = kwargs.pop("seed")
+        history = evolve_resilient_rules(
+            population_size=args.population_size,
+            generations=args.generations,
+            elite_fraction=args.elite_fraction,
+            mutation_rate=args.mutation_rate,
+            seed=seed,
+            experiment_kwargs=kwargs,
+        )
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        _write_csv(args.output, history)
+        print(f"Wrote {len(history)} generations to {args.output}")
+
+
+def _write_csv(path: Path, rows: list[dict[str, object]]) -> None:
+    if not rows:
+        raise ValueError("cannot write an empty result set.")
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 if __name__ == "__main__":

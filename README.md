@@ -196,3 +196,67 @@ If you use this project in research, please cite the repository using [`CITATION
 ## License
 
 MIT License. See [`LICENSE`](LICENSE).
+
+## Version 0.3: discovery workflows
+
+Ruliology Forge now supports workflows that go beyond isolated experiments:
+
+### Aggregate a raw scan
+
+```bash
+ruliology summarize results/eca_scan.csv \
+  --output results/eca_scan_summary.csv
+```
+
+The summary reports sample size, mean/median restoration, standard deviation,
+normal-approximation confidence intervals, recovery probability, mean recovery
+time, mean peak divergence, and mean final scar size.
+
+### Parameter sweeps
+
+```bash
+ruliology sweep \
+  --rules 30 54 90 110 \
+  --perturb-times 40 80 \
+  --perturb-radii 1 3 5 \
+  --initial-densities 0.25 0.5 0.75 \
+  --initial-condition random \
+  --repeats 10 \
+  --jobs 4 \
+  --seed 42
+```
+
+This writes both raw observations and grouped summaries. `--jobs` enables
+process-based parallel execution for independent experiments.
+
+### Evolutionary rule search
+
+```bash
+ruliology evolve \
+  --population-size 48 \
+  --generations 30 \
+  --mutation-rate 0.08 \
+  --initial-condition random \
+  --seed 42
+```
+
+The search treats each ECA rule as an eight-bit genome and selects rules by
+restoration coefficient. The output records the strongest rule and its full
+resilience metrics for each generation. This is an exploratory heuristic, not
+proof that a rule is globally optimal; candidate rules should be validated with
+large independent sweeps.
+
+### Python API
+
+```python
+from ruliology_forge.analysis import parameter_grid, summarize_scan
+from ruliology_forge.experiments import (
+    ExperimentConfig,
+    evolve_resilient_rules,
+    run_parameter_sweep,
+)
+```
+
+The new API makes it practical to build reproducible experiment matrices,
+aggregate repeated trials, and prototype rule-discovery studies without tying
+the research workflow to the command line.
