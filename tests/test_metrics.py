@@ -22,3 +22,25 @@ def test_restoration_coefficient():
     b = np.array([[0, 0, 0, 0], [1, 1, 0, 0]], dtype=np.uint8)
     assert restoration_coefficient(a, b, start=1) == 0.5
     assert final_restoration(a, b) == 0.5
+
+
+def test_recovery_metrics():
+    from ruliology_forge import divergence_auc, recovery_time, summarize_resilience
+
+    control = np.zeros((6, 4), dtype=np.uint8)
+    perturbed = control.copy()
+    perturbed[1] = 1
+    perturbed[2, :2] = 1
+
+    assert recovery_time(control, perturbed, start=1, threshold=0.0, persistence=2) == 2
+    assert divergence_auc(control, perturbed, start=1) > 0
+    summary = summarize_resilience(
+        control,
+        perturbed,
+        start=1,
+        recovery_threshold=0.0,
+        recovery_persistence=2,
+    )
+    assert summary.recovered is True
+    assert summary.recovery_time == 2
+    assert summary.peak_divergence == 1.0

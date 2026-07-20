@@ -4,10 +4,28 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 from pathlib import Path
 
 from .experiments import run_perturbation_experiment, scan_rules
 from .plotting import plot_divergence, plot_trajectory
+
+
+def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--width", type=int, default=201)
+    parser.add_argument("--steps", type=int, default=200)
+    parser.add_argument("--perturb-time", type=int, default=80)
+    parser.add_argument("--perturb-radius", type=int, default=5)
+    parser.add_argument(
+        "--perturbation",
+        choices=["bit_flip", "void", "random_mix"],
+        default="bit_flip",
+    )
+    parser.add_argument("--initial-condition", choices=["single", "random"], default="single")
+    parser.add_argument("--boundary", choices=["periodic", "fixed"], default="periodic")
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--recovery-threshold", type=float, default=0.01)
+    parser.add_argument("--recovery-persistence", type=int, default=5)
 
 
 def main() -> None:
@@ -16,21 +34,16 @@ def main() -> None:
 
     experiment = subparsers.add_parser("experiment", help="Run one perturbation experiment.")
     experiment.add_argument("--rule", type=int, default=110)
-    experiment.add_argument("--width", type=int, default=201)
-    experiment.add_argument("--steps", type=int, default=200)
-    experiment.add_argument("--perturb-time", type=int, default=80)
-    experiment.add_argument("--perturb-radius", type=int, default=5)
-    experiment.add_argument("--perturbation", choices=["bit_flip", "void", "random_mix"], default="bit_flip")
+    experiment.add_argument("--perturb-center", type=int, default=None)
     experiment.add_argument("--output-dir", type=Path, default=Path("results/experiment"))
+    _add_common_arguments(experiment)
 
     scan = subparsers.add_parser("scan", help="Scan ECA rules.")
     scan.add_argument("--start-rule", type=int, default=0)
     scan.add_argument("--end-rule", type=int, default=255)
-    scan.add_argument("--width", type=int, default=201)
-    scan.add_argument("--steps", type=int, default=200)
-    scan.add_argument("--perturb-time", type=int, default=80)
-    scan.add_argument("--perturb-radius", type=int, default=5)
+    scan.add_argument("--repeats", type=int, default=1)
     scan.add_argument("--output", type=Path, default=Path("results/eca_scan.csv"))
+    _add_common_arguments(scan)
 
     args = parser.parse_args()
 
@@ -41,27 +54,70 @@ def main() -> None:
             width=args.width,
             steps=args.steps,
             perturb_time=args.perturb_time,
+            perturb_center=args.perturb_center,
             perturb_radius=args.perturb_radius,
             perturbation=args.perturbation,
+            initial_condition=args.initial_condition,
+            boundary=args.boundary,
+            seed=args.seed,
+            recovery_threshold=args.recovery_threshold,
+            recovery_persistence=args.recovery_persistence,
         )
-        plot_trajectory(result.control, title=f"Rule {args.rule} control", save_path=args.output_dir / "control.png")
-        plot_trajectory(result.perturbed, title=f"Rule {args.rule} perturbed", save_path=args.output_dir / "perturbed.png")
-        plot_trajectory(result.difference, title=f"Rule {args.rule} XOR difference", save_path=args.output_dir / "difference.png")
+        plot_trajectory(
+            result.control,
+            title=f"Rule {args.rule} control",
+            save_path=args.output_dir / "control.png",
+        )
+        plot_trajectory(
+            result.perturbed,
+            title=f"Rule {args.rule} perturbed",
+            save_path=args.output_dir / "perturbed.png",
+        )
+        plot_trajectory(
+            result.difference,
+            title=f"Rule {args.rule} XOR difference",
+            save_path=args.output_dir / "difference.png",
+        )
         plot_divergence(result.divergence, save_path=args.output_dir / "divergence.png")
-        print(f"R={result.restoration_coefficient:.4f}")
-        print(f"Final restoration={result.final_restoration:.4f}")
+
+        metadata = {
+            "rule": result.rule,
+            "perturb_time": result.perturb_time,
+            "perturb_center": result.perturb_center,
+            "perturb_radius": result.perturb_radius,
+            "perturbation": result.perturbation,
+            "seed": result.seed,
+            **result.summary.to_dict(),
+        }
+        metadata_path = args.output_dir / "summary.json"
+        metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(metadata, indent=2))
+        print(f"Wrote plots and summary to {args.output_dir}")
 
     elif args.command == "scan":
+        if args.start_rule > args.end_rule:
+            parser.error("--start-rule must be less than or equal to --end-rule")
         args.output.parent.mkdir(parents=True, exist_ok=True)
         rows = scan_rules(
-            list(range(args.start_rule, args.end_rule + 1)),
+            range(args.start_rule, args.end_rule + 1),
             width=args.width,
             steps=args.steps,
             perturb_time=args.perturb_time,
             perturb_radius=args.perturb_radius,
+            perturbation=args.perturbation,
+            initial_condition=args.initial_condition,
+            boundary=args.boundary,
+            seed=args.seed,
+            repeats=args.repeats,
+            recovery_threshold=args.recovery_threshold,
+            recovery_persistence=args.recovery_persistence,
         )
-        with args.output.open("w", newline="") as f:
+        with args.output.open("w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
             writer.writeheader()
             writer.writerows(rows)
         print(f"Wrote {len(rows)} rows to {args.output}")
+
+
+if __name__ == "__main__":
+    main()

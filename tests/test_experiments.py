@@ -15,3 +15,21 @@ def test_scan_rules_small_range():
     assert len(rows) == 3
     assert rows[0]["rule"] == 0
     assert "restoration_coefficient" in rows[0]
+
+
+def test_scan_repeats_and_seed_are_reproducible():
+    kwargs = dict(
+        width=31,
+        steps=25,
+        perturb_time=5,
+        perturbation="random_mix",
+        initial_condition="random",
+        repeats=2,
+        seed=123,
+    )
+    first = scan_rules([30], **kwargs)
+    second = scan_rules([30], **kwargs)
+    assert first == second
+    assert len(first) == 2
+    assert first[0]["repeat"] == 0
+    assert "recovery_time" in first[0]
