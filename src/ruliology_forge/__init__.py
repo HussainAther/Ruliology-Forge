@@ -1,5 +1,13 @@
 """Ruliology Forge: computational resilience tools for rule-based systems."""
 
+from .analysis import (
+    AtlasAnalysisConfig,
+    AtlasAnalysisResult,
+    analyze_atlas_directory,
+    classify_rule_profiles,
+    identify_statistical_anomalies,
+    rank_rule_categories,
+)
 from .atlas import AtlasConfig, AtlasResult, aggregate_rule_profiles, build_resilience_atlas
 from .benchmarks import (
     BenchmarkScenario,
@@ -27,6 +35,8 @@ from .perturb import perturb_state
 from .plotting import plot_divergence, plot_trajectory
 
 __all__ = [
+    "AtlasAnalysisConfig",
+    "AtlasAnalysisResult",
     "AtlasConfig",
     "AtlasResult",
     "BenchmarkScenario",
@@ -36,16 +46,20 @@ __all__ = [
     "PerturbationResult",
     "ResilienceSummary",
     "aggregate_rule_profiles",
+    "analyze_atlas_directory",
     "benchmark_rules",
     "build_resilience_atlas",
+    "classify_rule_profiles",
     "divergence_auc",
     "final_restoration",
     "hamming_divergence",
+    "identify_statistical_anomalies",
     "initial_state",
     "perturb_state",
     "plot_divergence",
     "plot_trajectory",
     "rank_benchmark_rows",
+    "rank_rule_categories",
     "recovery_time",
     "restoration_coefficient",
     "run_perturbation_experiment",

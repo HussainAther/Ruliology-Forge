@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 - Atlas analysis and publication figures
+
+- Added `ruliology analyze` for completed resilience-atlas directories.
+- Added explicit separation of trivial and nontrivial restoration.
+- Added ranked tables for resilient rules, scar formers, fragile rules, and anomalies.
+- Added interpretable z-score and complexity-trend anomaly screening.
+- Added publication-ready PNG and PDF figures, including timing and correlation heatmaps.
+- Added a cautious, data-grounded Markdown findings report and analysis manifest.
+- Added end-to-end analysis tests; the full suite now contains 27 passing tests.
+
 ## 0.3.0
 
 - Added grouped scan summaries with confidence intervals and recovery rates.

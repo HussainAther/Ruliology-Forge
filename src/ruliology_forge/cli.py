@@ -12,7 +12,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .analysis import parameter_grid, summarize_scan
+from .analysis import (
+    AtlasAnalysisConfig,
+    analyze_atlas_directory,
+    parameter_grid,
+    summarize_scan,
+)
 from .atlas import AtlasConfig, atlas_markdown, build_resilience_atlas
 from .benchmarks import benchmark_markdown, benchmark_rules, standard_suite, timing_suite
 from .experiments import (
@@ -29,7 +34,7 @@ def _package_version() -> str:
     try:
         return version("ruliology-forge")
     except PackageNotFoundError:
-        return "0.4.0"
+        return "0.5.0"
 
 
 def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
@@ -104,6 +109,18 @@ def main() -> None:
     sweep.add_argument("--summary-output", type=Path, default=Path("results/sweep_summary.csv"))
     _add_common_arguments(sweep)
 
+
+    analyze = subparsers.add_parser(
+        "analyze", help="Analyze an existing resilience atlas and generate figures."
+    )
+    analyze.add_argument("--atlas-dir", type=Path, required=True)
+    analyze.add_argument("--output-dir", type=Path, default=Path("results/resilience_analysis"))
+    analyze.add_argument("--top", type=int, default=20)
+    analyze.add_argument("--trivial-threshold", type=float, default=0.5)
+    analyze.add_argument("--activity-floor", type=float, default=0.005)
+    analyze.add_argument("--entropy-floor", type=float, default=0.05)
+    analyze.add_argument("--anomaly-z", type=float, default=1.5)
+    analyze.add_argument("--figure-dpi", type=int, default=220)
 
     atlas = subparsers.add_parser(
         "atlas", help="Build a feature-enriched ECA resilience atlas."
@@ -228,6 +245,24 @@ def main() -> None:
         print(f"Wrote {len(rows)} raw rows to {args.output}")
         print(f"Wrote {len(summary_rows)} summary rows to {args.summary_output}")
 
+
+    elif args.command == "analyze":
+        result = analyze_atlas_directory(
+            args.atlas_dir,
+            args.output_dir,
+            config=AtlasAnalysisConfig(
+                top_n=args.top,
+                trivial_threshold=args.trivial_threshold,
+                nontrivial_activity_floor=args.activity_floor,
+                nontrivial_entropy_floor=args.entropy_floor,
+                anomaly_z_threshold=args.anomaly_z,
+                figure_dpi=args.figure_dpi,
+            ),
+        )
+        print(
+            f"Analyzed {result.manifest['source_rule_count']} rules and wrote outputs "
+            f"to {args.output_dir}"
+        )
 
     elif args.command == "atlas":
         if args.top <= 0:

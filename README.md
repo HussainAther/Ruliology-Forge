@@ -282,3 +282,37 @@ The command writes:
 - `benchmark_manifest.json` — suite fingerprint and run metadata
 
 The standard score combines mean restoration, worst-case restoration, recovery probability, shift-tolerant restoration, and consistency across scenarios. It is an exploratory ranking, not a claim that one rule is universally biologically regenerative.
+
+## Version 0.5: Atlas analysis
+
+After building an atlas, generate ranked rule categories, anomaly tables, a
+Markdown findings report, and publication-ready PNG/PDF figures:
+
+```bash
+ruliology analyze \
+  --atlas-dir results/resilience_atlas \
+  --output-dir results/resilience_analysis \
+  --top 20
+```
+
+The analysis explicitly separates high restoration caused by trivial attractor
+convergence from restoration of nontrivial control dynamics. It writes:
+
+```text
+resilience_analysis/
+  enriched_rule_profiles.csv
+  top_resilient_rules.csv
+  nontrivial_recoverers.csv
+  trivial_recoverers.csv
+  scar_formers.csv
+  fragile_rules.csv
+  anomalous_rules.csv
+  findings.md
+  analysis_manifest.json
+  figures/*.png
+  figures/*.pdf
+```
+
+Thresholds are exposed as CLI arguments and recorded in the manifest. The
+resulting categories and anomaly flags are exploratory screening tools, not
+validated universal classifications.
