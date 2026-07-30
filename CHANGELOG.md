@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.1 - 2026-07-30
+
+- Added an animated GitHub README demo generated from the real Rule 110 experiment engine.
+- Added side-by-side control, perturbed, and XOR-scar panels with perturbation timing and restoration metadata.
+- Added `scripts/generate_readme_demo.py` and a `demo` optional dependency for reproducible regeneration.
+- Added a static PNG fallback alongside the optimized GIF.
+
 ## 0.5.0 - Atlas analysis and publication figures
 
 - Added `ruliology analyze` for completed resilience-atlas directories.

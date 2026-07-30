@@ -6,6 +6,12 @@
 
 **Ruliology Forge** is an open-source Python toolkit for studying computational resilience in rule-based systems.
 
+<p align="center">
+  <img src="docs/assets/ruliology-forge-demo.gif" alt="Animated Rule 110 control, perturbed trajectory, and computational scar evolving side by side" width="100%">
+</p>
+
+<p align="center"><em>Rule 110 before and after a localized perturbation, with the resulting XOR scar tracked over time.</em></p>
+
 The first release focuses on Elementary Cellular Automata (ECA): simulating rules, applying localized perturbations, comparing control and perturbed trajectories, and measuring recovery with a Restoration Coefficient.
 
 This repository is intentionally scoped as a clean, reproducible starter toolkit. Broader biological, morphogenetic, and shell-pattern work can be added later as optional research modules once datasets and claims are curated.
@@ -50,6 +56,17 @@ Some rules rapidly return to their baseline behavior. Others diverge permanently
 - Complete experiment configuration and software metadata in `summary.json`.
 
 See [`docs/methods.md`](docs/methods.md) for definitions and interpretation cautions.
+
+## Animated demo
+
+The README animation is generated from the real simulation engine rather than from a hand-authored mockup. To regenerate it:
+
+```bash
+pip install -e '.[demo]'
+python scripts/generate_readme_demo.py
+```
+
+This writes both the animated GIF and a static fallback image to `docs/assets/`.
 
 ## Installation
 
@@ -316,27 +333,3 @@ resilience_analysis/
 Thresholds are exposed as CLI arguments and recorded in the manifest. The
 resulting categories and anomaly flags are exploratory screening tools, not
 validated universal classifications.
-
-## Validate atlas findings
-
-Use `validate-atlas` after an exploratory atlas analysis to test whether rankings,
-classes, and anomaly labels survive changes in lattice width, run duration, random
-seed, perturbation position, and boundary conditions.
-
-```bash
-ruliology validate-atlas \
-  --rules 30 54 90 110 \
-  --widths 101 201 401 \
-  --steps-values 100 200 400 \
-  --seeds 11 23 47 \
-  --perturb-positions 0.25 0.5 0.75 \
-  --boundary-modes periodic fixed \
-  --jobs 4 \
-  --output-dir results/atlas_validation
-```
-
-The command writes raw runs, per-rule stability statistics, pairwise rank
-correlations, class-frequency tables, robust and unstable finding tables, a
-manifest, a Markdown report, and publication-ready PNG/PDF figures. The default
-full grid is intentionally expensive; validate a shortlist first before scaling
-to all 256 rules.
