@@ -33,3 +33,9 @@
 - Added benchmark manifests, raw observations, rankings, and Markdown reports.
 - Added the `ruliology benchmark` CLI command.
 - Added benchmark API tests and deterministic suite fingerprinting.
+
+## 0.6.0 - 2026-07-30
+
+- Added `validate-atlas` for cross-condition resilience validation.
+- Added rank, classification, and anomaly stability metrics.
+- Added robust/unstable finding separation, manifests, reports, CSVs, and PNG/PDF figures.

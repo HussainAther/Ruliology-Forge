@@ -316,3 +316,27 @@ resilience_analysis/
 Thresholds are exposed as CLI arguments and recorded in the manifest. The
 resulting categories and anomaly flags are exploratory screening tools, not
 validated universal classifications.
+
+## Validate atlas findings
+
+Use `validate-atlas` after an exploratory atlas analysis to test whether rankings,
+classes, and anomaly labels survive changes in lattice width, run duration, random
+seed, perturbation position, and boundary conditions.
+
+```bash
+ruliology validate-atlas \
+  --rules 30 54 90 110 \
+  --widths 101 201 401 \
+  --steps-values 100 200 400 \
+  --seeds 11 23 47 \
+  --perturb-positions 0.25 0.5 0.75 \
+  --boundary-modes periodic fixed \
+  --jobs 4 \
+  --output-dir results/atlas_validation
+```
+
+The command writes raw runs, per-rule stability statistics, pairwise rank
+correlations, class-frequency tables, robust and unstable finding tables, a
+manifest, a Markdown report, and publication-ready PNG/PDF figures. The default
+full grid is intentionally expensive; validate a shortlist first before scaling
+to all 256 rules.

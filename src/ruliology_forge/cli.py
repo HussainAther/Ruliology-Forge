@@ -28,13 +28,14 @@ from .experiments import (
     scan_rules,
 )
 from .plotting import plot_divergence, plot_trajectory
+from .validation import ValidationConfig, validate_resilience
 
 
 def _package_version() -> str:
     try:
         return version("ruliology-forge")
     except PackageNotFoundError:
-        return "0.5.0"
+        return "0.6.0"
 
 
 def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
@@ -121,6 +122,30 @@ def main() -> None:
     analyze.add_argument("--entropy-floor", type=float, default=0.05)
     analyze.add_argument("--anomaly-z", type=float, default=1.5)
     analyze.add_argument("--figure-dpi", type=int, default=220)
+
+    validate = subparsers.add_parser(
+        "validate-atlas", help="Validate resilience findings across experimental conditions."
+    )
+    validate.add_argument("--rules", type=int, nargs="+", default=list(range(256)))
+    validate.add_argument("--widths", type=int, nargs="+", default=[101, 201, 401])
+    validate.add_argument("--steps-values", type=int, nargs="+", default=[100, 200, 400])
+    validate.add_argument("--seeds", type=int, nargs="+", default=[11, 23, 47])
+    validate.add_argument("--perturb-positions", type=float, nargs="+", default=[0.25, 0.5, 0.75])
+    validate.add_argument("--boundary-modes", choices=["periodic", "fixed"], nargs="+", default=["periodic", "fixed"])
+    validate.add_argument("--perturb-time-fraction", type=float, default=0.4)
+    validate.add_argument("--perturb-radius", type=int, default=5)
+    validate.add_argument("--perturbation", choices=["bit_flip", "void", "random_mix"], default="bit_flip")
+    validate.add_argument("--initial-condition", choices=["single", "random"], default="single")
+    validate.add_argument("--initial-density", type=float, default=0.5)
+    validate.add_argument("--jobs", type=int, default=1)
+    validate.add_argument("--recovery-threshold", type=float, default=0.01)
+    validate.add_argument("--recovery-persistence", type=int, default=5)
+    validate.add_argument("--max-shift", type=int, default=10)
+    validate.add_argument("--classification-agreement", type=float, default=0.8)
+    validate.add_argument("--rank-stability", type=float, default=0.75)
+    validate.add_argument("--anomaly-reproduction", type=float, default=0.7)
+    validate.add_argument("--figure-dpi", type=int, default=220)
+    validate.add_argument("--output-dir", type=Path, default=Path("results/atlas_validation"))
 
     atlas = subparsers.add_parser(
         "atlas", help="Build a feature-enriched ECA resilience atlas."
@@ -262,6 +287,36 @@ def main() -> None:
         print(
             f"Analyzed {result.manifest['source_rule_count']} rules and wrote outputs "
             f"to {args.output_dir}"
+        )
+
+    elif args.command == "validate-atlas":
+        result = validate_resilience(
+            ValidationConfig(
+                rules=tuple(args.rules),
+                widths=tuple(args.widths),
+                steps_values=tuple(args.steps_values),
+                seeds=tuple(args.seeds),
+                perturb_positions=tuple(args.perturb_positions),
+                boundaries=tuple(args.boundary_modes),
+                perturb_time_fraction=args.perturb_time_fraction,
+                perturb_radius=args.perturb_radius,
+                perturbation=args.perturbation,
+                initial_condition=args.initial_condition,
+                initial_density=args.initial_density,
+                jobs=args.jobs,
+                recovery_threshold=args.recovery_threshold,
+                recovery_persistence=args.recovery_persistence,
+                max_shift=args.max_shift,
+                classification_agreement_threshold=args.classification_agreement,
+                rank_stability_threshold=args.rank_stability,
+                anomaly_reproduction_threshold=args.anomaly_reproduction,
+                figure_dpi=args.figure_dpi,
+            ),
+            args.output_dir,
+        )
+        print(
+            f"Validated {result.manifest['rule_count']} rules across "
+            f"{result.manifest['condition_count']} conditions; outputs: {args.output_dir}"
         )
 
     elif args.command == "atlas":
