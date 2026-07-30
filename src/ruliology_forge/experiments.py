@@ -8,6 +8,7 @@ from typing import Iterable, Literal
 import numpy as np
 
 from .eca import BoundaryMode, InitialCondition, ECARule, initial_state, simulate_eca
+from .features import extract_features
 from .metrics import ResilienceSummary, hamming_divergence, summarize_resilience, xor_difference
 from .perturb import PerturbationKind, perturb_state
 
@@ -246,6 +247,7 @@ def run_parameter_sweep(
     *,
     repeats: int = 1,
     jobs: int = 1,
+    include_features: bool = False,
 ) -> list[dict[str, object]]:
     """Run an arbitrary collection of experiment configurations."""
     from concurrent.futures import ProcessPoolExecutor
@@ -260,7 +262,7 @@ def run_parameter_sweep(
         children = root.spawn(repeats)
         for repeat, child in enumerate(children):
             seed = int(child.generate_state(1)[0])
-            tasks.append((ExperimentConfig(**{**config.to_dict(), "seed": seed}), repeat))
+            tasks.append((ExperimentConfig(**{**config.to_dict(), "seed": seed}), repeat, include_features))
     if jobs == 1:
         results = [_run_config_task(task) for task in tasks]
     else:
@@ -269,15 +271,46 @@ def run_parameter_sweep(
     return results
 
 
-def _run_config_task(task: tuple[ExperimentConfig, int]) -> dict[str, object]:
-    config, repeat = task
+def _run_config_task(task: tuple[ExperimentConfig, int, bool]) -> dict[str, object]:
+    config, repeat, include_features = task
     result = run_perturbation_experiment(**config.to_dict())
-    return {
+    row: dict[str, object] = {
         "repeat": repeat,
         **config.to_dict(),
         **result.summary.to_dict(),
         "initial_seed": result.initial_seed,
         "perturbation_seed": result.perturbation_seed,
+    }
+    if include_features:
+        row.update(
+            {f"control_{name}": value for name, value in extract_features(result.control).to_dict().items()}
+        )
+        row.update(_control_diagnostics(result.control, start=config.perturb_time))
+    return row
+
+
+def _control_diagnostics(trajectory: np.ndarray, *, start: int) -> dict[str, object]:
+    """Describe whether apparent restoration is explained by trivial convergence."""
+
+    post = trajectory[start:]
+    final = post[-1]
+    fixed_point = bool(post.shape[0] >= 2 and np.array_equal(post[-1], post[-2]))
+    period = None
+    max_period = min(16, post.shape[0] - 1)
+    for candidate in range(1, max_period + 1):
+        if np.array_equal(post[-1], post[-1 - candidate]):
+            period = candidate
+            break
+    uniform_final = bool(np.all(final == final[0]))
+    low_activity = bool(
+        post.shape[0] < 2 or np.not_equal(post[1:], post[:-1]).mean() <= 0.001
+    )
+    return {
+        "control_final_density": float(final.mean()),
+        "control_fixed_point": fixed_point,
+        "control_short_period": period,
+        "control_uniform_final": uniform_final,
+        "control_trivial_convergence": bool(uniform_final or (fixed_point and low_activity)),
     }
 
 

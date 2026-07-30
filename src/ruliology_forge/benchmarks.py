@@ -100,6 +100,40 @@ def standard_suite(*, steps: int = 200) -> BenchmarkSuite:
     )
 
 
+def timing_suite(
+    *,
+    steps: int = 200,
+    interval: int = 10,
+    perturb_radius: int = 5,
+) -> BenchmarkSuite:
+    """Return a controlled suite that varies injury time and nothing else."""
+
+    if steps <= 2:
+        raise ValueError("steps must exceed two.")
+    if interval <= 0:
+        raise ValueError("interval must be positive.")
+    if perturb_radius < 0:
+        raise ValueError("perturb_radius must be non-negative.")
+    times = tuple(range(interval, steps, interval))
+    if not times:
+        times = (max(1, steps // 2),)
+    return BenchmarkSuite(
+        name="eca-resilience-timing-v1",
+        description=(
+            "A controlled critical-window suite varying perturbation time while holding "
+            "operator, radius, initial condition, density, and boundary constant."
+        ),
+        scenarios=tuple(
+            BenchmarkScenario(
+                name=f"local-flip-t{time}",
+                perturb_time=time,
+                perturb_radius=perturb_radius,
+            )
+            for time in times
+        ),
+    )
+
+
 def benchmark_rules(
     rules: Iterable[int],
     *,

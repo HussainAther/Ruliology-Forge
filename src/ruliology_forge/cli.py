@@ -6,14 +6,15 @@ import argparse
 import csv
 import json
 import platform
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from .analysis import parameter_grid, summarize_scan
-from .benchmarks import benchmark_markdown, benchmark_rules, standard_suite
+from .atlas import AtlasConfig, atlas_markdown, build_resilience_atlas
+from .benchmarks import benchmark_markdown, benchmark_rules, standard_suite, timing_suite
 from .experiments import (
     ExperimentConfig,
     evolve_resilient_rules,
@@ -22,6 +23,13 @@ from .experiments import (
     scan_rules,
 )
 from .plotting import plot_divergence, plot_trajectory
+
+
+def _package_version() -> str:
+    try:
+        return version("ruliology-forge")
+    except PackageNotFoundError:
+        return "0.4.0"
 
 
 def _add_common_arguments(parser: argparse.ArgumentParser) -> None:
@@ -62,7 +70,7 @@ def _experiment_kwargs(args: argparse.Namespace) -> dict[str, object]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="ruliology")
-    parser.add_argument("--version", action="version", version=f"%(prog)s {version('ruliology-forge')}")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {_package_version()}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     experiment = subparsers.add_parser("experiment", help="Run one perturbation experiment.")
@@ -96,6 +104,18 @@ def main() -> None:
     sweep.add_argument("--summary-output", type=Path, default=Path("results/sweep_summary.csv"))
     _add_common_arguments(sweep)
 
+
+    atlas = subparsers.add_parser(
+        "atlas", help="Build a feature-enriched ECA resilience atlas."
+    )
+    atlas.add_argument("--rules", type=int, nargs="+", default=list(range(256)))
+    atlas.add_argument("--suite", choices=["standard", "timing"], default="standard")
+    atlas.add_argument("--timing-interval", type=int, default=10)
+    atlas.add_argument("--repeats", type=int, default=20)
+    atlas.add_argument("--jobs", type=int, default=1)
+    atlas.add_argument("--output-dir", type=Path, default=Path("results/resilience_atlas"))
+    atlas.add_argument("--top", type=int, default=20)
+    _add_common_arguments(atlas)
 
     benchmark = subparsers.add_parser("benchmark", help="Benchmark and rank ECA rules across a standard resilience suite.")
     benchmark.add_argument("--rules", type=int, nargs="+", default=list(range(256)))
@@ -144,7 +164,7 @@ def main() -> None:
             "initial_seed": result.initial_seed,
             "perturbation_seed": result.perturbation_seed,
             "software": {
-                "ruliology_forge": version("ruliology-forge"),
+                "ruliology_forge": _package_version(),
                 "python": platform.python_version(),
                 "numpy": np.__version__,
             },
@@ -208,6 +228,44 @@ def main() -> None:
         print(f"Wrote {len(rows)} raw rows to {args.output}")
         print(f"Wrote {len(summary_rows)} summary rows to {args.summary_output}")
 
+
+    elif args.command == "atlas":
+        if args.top <= 0:
+            parser.error("--top must be positive")
+        suite = (
+            standard_suite(steps=args.steps)
+            if args.suite == "standard"
+            else timing_suite(
+                steps=args.steps,
+                interval=args.timing_interval,
+                perturb_radius=args.perturb_radius,
+            )
+        )
+        result = build_resilience_atlas(
+            AtlasConfig(
+                rules=tuple(args.rules),
+                repeats=args.repeats,
+                width=args.width,
+                steps=args.steps,
+                seed=args.seed,
+                jobs=args.jobs,
+                recovery_threshold=args.recovery_threshold,
+                recovery_persistence=args.recovery_persistence,
+                max_shift=args.max_shift,
+            ),
+            suite=suite,
+        )
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        _write_csv(args.output_dir / "atlas_observations.csv", result.observations)
+        _write_csv(args.output_dir / "atlas_rule_profiles.csv", result.rule_profiles)
+        _write_csv(args.output_dir / "atlas_correlations.csv", result.correlations)
+        (args.output_dir / "atlas_manifest.json").write_text(
+            json.dumps(result.manifest, indent=2) + "\n", encoding="utf-8"
+        )
+        (args.output_dir / "atlas_report.md").write_text(
+            atlas_markdown(result, top_n=args.top), encoding="utf-8"
+        )
+        print(f"Wrote resilience atlas outputs to {args.output_dir}")
 
     elif args.command == "benchmark":
         if args.top <= 0:
