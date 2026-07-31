@@ -8,7 +8,12 @@ from .analysis import (
     identify_statistical_anomalies,
     rank_rule_categories,
 )
-from .atlas import AtlasConfig, AtlasResult, aggregate_rule_profiles, build_resilience_atlas
+from .atlas import (
+    AtlasConfig,
+    AtlasResult,
+    aggregate_rule_profiles,
+    build_resilience_atlas,
+)
 from .benchmarks import (
     BenchmarkScenario,
     BenchmarkSuite,
@@ -18,7 +23,19 @@ from .benchmarks import (
     timing_suite,
 )
 from .eca import ECARule, initial_state, simulate_eca
-from .experiments import ExperimentConfig, PerturbationResult, run_perturbation_experiment, scan_rules
+from .experiments import (
+    ExperimentConfig,
+    PerturbationResult,
+    run_perturbation_experiment,
+    scan_rules,
+)
+from .exporters import (
+    BundleFiles,
+    CoordinateSystem,
+    HOUDINI_SCHEMA_VERSION,
+    HoudiniBundleManifest,
+    export_houdini_bundle,
+)
 from .metrics import (
     ResilienceSummary,
     divergence_auc,
@@ -41,8 +58,12 @@ __all__ = [
     "AtlasResult",
     "BenchmarkScenario",
     "BenchmarkSuite",
+    "BundleFiles",
+    "CoordinateSystem",
     "ECARule",
     "ExperimentConfig",
+    "HOUDINI_SCHEMA_VERSION",
+    "HoudiniBundleManifest",
     "PerturbationResult",
     "ResilienceSummary",
     "aggregate_rule_profiles",
@@ -51,6 +72,7 @@ __all__ = [
     "build_resilience_atlas",
     "classify_rule_profiles",
     "divergence_auc",
+    "export_houdini_bundle",
     "final_restoration",
     "hamming_divergence",
     "identify_statistical_anomalies",
