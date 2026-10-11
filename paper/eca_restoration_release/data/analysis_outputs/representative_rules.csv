@@ -1,0 +1,7 @@
+rule,wolfram_class,relative_restoration_mean,cone_damage_auc_mean,exact_coalescence_rate,recovery_time_mean_conditional,selection_rationale
+0,I,1.0,0.0,1.0,1.0,Class I control; perfect restoration and exact coalescence
+36,II,0.895022351365244,0.0516563276409758,0.0546875,1.837962962962963,Class II high-restoration extreme
+57,II,0.0304613040532862,0.4534265186431713,0.0390625,21.64285714285714,Class II low-restoration extreme; demonstrates large within-class spread
+104,II,0.8544671215196707,0.0698673869959987,0.1848958333333333,4.240579710144927,Class II high restoration with highest exact coalescence rate in Class II
+110,IV,0.344625344930246,0.3135154842568022,0.0,,Class IV high-restoration representative within its class
+161,III,-0.0314457406378478,0.4804173726527054,0.0,,Class III global minimum; net perturbation amplification

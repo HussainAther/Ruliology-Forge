@@ -1,14 +1,22 @@
 cff-version: 1.2.0
-title: Ruliology Forge
-message: If you use this software, please cite it using the metadata from this file.
+title: "Ruliology Forge"
+message: "If you use this software, please cite it using the metadata from this file."
 type: software
 authors:
   - family-names: Ather
     given-names: Syed Hussain
-repository-code: https://github.com/HussainAther/ruliology-forge
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # add if you have one
+repository-code: "https://github.com/HussainAther/Ruliology-Forge"
+url: "https://github.com/HussainAther/Ruliology-Forge"
 license: MIT
-version: 0.1.0
-abstract: Open-source Python toolkit for studying computational resilience, perturbation, and restoration in elementary cellular automata and rule-based systems.
+version: "0.4.1"                # must match the release tag and pyproject.toml
+date-released: "2026-10-12"     # set to the actual release date
+# doi: "10.5281/zenodo.XXXXXXX" # add after Zenodo mints it (see notes)
+abstract: >-
+  Open-source Python toolkit for studying computational resilience, perturbation,
+  and restoration in elementary cellular automata and rule-based systems. The
+  paper/eca_restoration/ folder contains the standalone benchmark scripts and
+  data for the accompanying manuscript on computational restoration.
 keywords:
   - cellular automata
   - ruliology
@@ -16,3 +24,4 @@ keywords:
   - artificial life
   - computational resilience
   - perturbation
+  - restoration
