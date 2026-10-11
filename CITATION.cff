@@ -11,7 +11,7 @@ url: "https://github.com/HussainAther/Ruliology-Forge"
 license: MIT
 version: "0.4.1"                # must match the release tag and pyproject.toml
 date-released: "2026-10-12"     # set to the actual release date
-# doi: "10.5281/zenodo.XXXXXXX" # add after Zenodo mints it (see notes)
+# doi: "10.5281/zenodo.23306457" # add after Zenodo mints it (see notes)
 abstract: >-
   Open-source Python toolkit for studying computational resilience, perturbation,
   and restoration in elementary cellular automata and rule-based systems. The
